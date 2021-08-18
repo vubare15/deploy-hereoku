@@ -8,6 +8,103 @@ if(!$_SESSION['admin_username'])
 }
 
 ?>
+<?php
+
+	error_reporting( ~E_NOTICE );
+	
+	require_once 'config.php';
+	
+	if(isset($_GET['edit_id']) && !empty($_GET['edit_id']))
+	{
+		$id = $_GET['edit_id'];
+		$stmt_edit = $DB_con->prepare('SELECT * FROM items WHERE item_id =:item_id');
+		$stmt_edit->execute(array(':item_id'=>$id));
+		$edit_row = $stmt_edit->fetch(PDO::FETCH_ASSOC);
+		extract($edit_row);
+	}
+	else
+	{
+		header("Location: items.php");
+	}
+	
+	
+	
+	if(isset($_POST['btn_save_updates']))
+	{
+		$item_name = $_POST['item_name'];
+		$item_price = $_POST['item_price'];
+		
+			
+		$imgFile = $_FILES['item_image']['name'];
+		$tmp_dir = $_FILES['item_image']['tmp_name'];
+		$imgSize = $_FILES['item_image']['size'];
+					
+		if($imgFile)
+		{
+			$upload_dir = 'item_images/'; // upload directory	
+			$imgExt = strtolower(pathinfo($imgFile,PATHINFO_EXTENSION)); // get image extension
+			$valid_extensions = array('jpeg', 'jpg', 'png', 'gif'); // valid extensions
+			$itempic = rand(1000,1000000).".".$imgExt;
+			if(in_array($imgExt, $valid_extensions))
+			{			
+				if($imgSize < 5000000)
+				{
+					unlink($upload_dir.$edit_row['item_image']);
+					move_uploaded_file($tmp_dir,$upload_dir.$itempic);
+				}
+				else
+				{
+					$errMSG = "Sorry, your file is too large it should be less then 5MB";
+					echo "<script>alert('Sorry, your file is too large it should be less then 5MB')</script>";				
+					 
+				}
+			}
+			else
+			{
+				$errMSG = "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";	
+              echo "<script>alert('Sorry, only JPG, JPEG, PNG & GIF files are allowed.')</script>";					
+			}	
+		}
+		else
+		{
+		
+			$itempic = $edit_row['item_image']; 
+		}	
+						
+		
+
+		if(!isset($errMSG))
+		{
+			$stmt = $DB_con->prepare('UPDATE items
+									     SET item_name=:item_name, 
+											 item_price=:item_price, 
+										     item_image=:item_image 
+								       WHERE item_id=:item_id');
+			$stmt->bindParam(':item_name',$item_name);
+			$stmt->bindParam(':item_price',$item_price);
+			$stmt->bindParam(':item_image',$itempic);
+			$stmt->bindParam(':item_id',$id);
+				
+			if($stmt->execute()){
+				?>
+                <script>
+				alert('Successfully Updated ...');
+				window.location.href='items.php';
+				</script>
+                <?php
+			}
+			else{
+				$errMSG = "Sorry Data Could Not Updated !";
+				 echo "<script>alert('Sorry Data Could Not Updated !')</script>";				
+			}
+		
+		}
+		
+						
+	}
+	
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,9 +136,9 @@ if(!$_SESSION['admin_username'])
             </div>
             <div class="collapse navbar-collapse navbar-ex1-collapse">
                 <ul class="nav navbar-nav side-nav">
-                    <li class="active"><a href="index.php"> &nbsp; &nbsp; &nbsp; Home</a></li>
+                    <li><a href="index.php"> &nbsp; &nbsp; &nbsp; Home</a></li>
 					<li><a data-toggle="modal" data-target="#uploadModal"> &nbsp; &nbsp; &nbsp; Upload Items</a></li>
-					<li><a href="items.php"> &nbsp; &nbsp; &nbsp; Item Management</a></li>
+					<li class="active"><a href="items.php"> &nbsp; &nbsp; &nbsp; Item Management</a></li>
 					<li><a href="customers.php"> &nbsp; &nbsp; &nbsp; Customer Management</a></li>
 					<li><a href="orderdetails.php"> &nbsp; &nbsp; &nbsp; Order Details</a></li>
 					<li><a href="logout.php"> &nbsp; &nbsp; &nbsp; Logout</a></li>
@@ -74,111 +171,76 @@ if(!$_SESSION['admin_username'])
 			
 			
 			
-			<div id="my-carousel" class="carousel slide hero-slide hidden-xs" data-ride="carousel">
-    <!-- Indicators -->
-    <ol class="carousel-indicators">
-        <li data-target="#my-carousel" data-slide-to="0" class="active"></li>
-        <li data-target="#my-carousel" data-slide-to="1"></li>
-        <li data-target="#my-carousel" data-slide-to="2"></li>
-		<li data-target="#my-carousel" data-slide-to="3"></li>
-        <li data-target="#my-carousel" data-slide-to="4"></li>
-		<li data-target="#my-carousel" data-slide-to="5"></li>
-    </ol>
+			
+			
+			
+		<div class="clearfix"></div>
 
-    <!-- Wrapper for slides -->
-    <div class="carousel-inner" role="listbox">
-        <div class="item active">
-		
-            <img src="../assets/img/1-slide.jpg" alt="Hero Slide" style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-                <h1 style="font-family:Century Gothic"><b></b></h1>
-
-                <h2></h2>
-            </div>
-        </div>
-        <div class="item">
-            <img src="../assets/img/2-slide.jpg" alt="..." style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-               
-            </div>
-        </div>
-        <div class="item">
-            <img src="../assets/img/3-slide.jpg" alt="..." style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-		
-
-                <p></p>
-            </div>
-        </div>
-		
-		<div class="item">
-            <img src="../assets/img/4-slide.jpg" alt="..." style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-		
-
-                <p></p>
-            </div>
-        </div>
-		
-		<div class="item">
-            <img src="../assets/img/5-slide.jpg" alt="..." style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-		
-
-                <p></p>
-            </div>
-        </div>
-		
-		<div class="item">
-            <img src="../assets/img/6-slide.jpg" alt="..." style="width:100%;height:500px;">
-
-            <div class="carousel-caption">
-		
-
-                <p></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Controls -->
-    <a class="left carousel-control" href="#my-carousel" role="button" data-slide="prev">
+<form method="post" enctype="multipart/form-data" class="form-horizontal">
 	
-      <span class="icon-prev"></span>
+    
+    <?php
+	if(isset($errMSG)){
+		?>
        
-    </a>
-    <a class="right carousel-control" href="#my-carousel" role="button" data-slide="next">
-       
-       <span class="icon-next"></span>
-    </a>
-
-<!-- #my-carousel-->
-			
-			</div>
-			
-			
-		<br />	
-			 <div class="alert alert-danger">
+        <?php
+	}
+	?>
+			 <div class="alert alert-info">
                         
-                        &nbsp; &nbsp; Welcome to ATN Shop! So, if you're looking for an Element skateboard, why not visit the EDGE Skateshop? 
-						It's that easy. If you have a favorite skate brand, 
-						this is the easiest and most straightforward way to get it.A lot of skate brands who are well known for one thing, 
-						like decks, also sell completes with 
-						their own special wheels, along with other brands for things like trucks, bearings, etc.
-                    </div>
-					<br />
-			
-			<div class="alert alert-default" style="background-color:#033c73;">
+                          <center> <h3><strong>Update Item</strong> </h3></center>
+						  
+						  </div>
+						  
+						 <table class="table table-bordered table-responsive">
+	 
+    <tr>
+    	<td><label class="control-label">Name of Item.</label></td>
+        <td><input class="form-control" type="text" name="item_name" value="<?php echo $item_name; ?>" required /></td>
+    </tr>
+	
+	 <tr>
+    	<td><label class="control-label">Price.</label></td>
+        <td><input id="inputprice" class="form-control" type="text" name="item_price" value="<?php echo $item_price; ?>" required /></td>
+    </tr>
+	
+	
+    <tr>
+    	<td><label class="control-label">Image.</label></td>
+        <td>
+        	<p><img class="img img-thumbnail" src="item_images/<?php echo $item_image; ?>" height="150" width="150" /></p>
+        	<input class="input-group" type="file" name="item_image" accept="image/*" />
+        </td>
+    </tr>
+    
+    <tr>
+        <td colspan="2"><button type="submit" name="btn_save_updates" class="btn btn-primary">
+        <span class="glyphicon glyphicon-save"></span> Update
+        </button>
+        
+        <a class="btn btn-danger" href="items.php"> <span class="glyphicon glyphicon-backward"></span> Cancel </a>
+        
+        </td>
+    </tr>
+    
+    </table>
+    
+</form>
+						  
+						
+				<br />
+	 
+	 <div class="alert alert-default" style="background-color:#033c73;">
                        <p style="color:white;text-align:center;">
                        &copy ATN Shop| Design by : BA RE
 
 						</p>
                         
-                    </div>
+                    </div>		  
+						  
+						  
+			
+			
             
                 </div>
             </div>
@@ -260,6 +322,9 @@ if(!$_SESSION['admin_username'])
             </div>
           </div>
         </div>
+		
+		
+		
 	  	  <script>
    
     $(document).ready(function() {
